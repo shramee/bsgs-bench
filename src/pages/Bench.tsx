@@ -1,5 +1,6 @@
 import React, { useState, useCallback } from 'react';
 import { Clock, Play, AlertCircle, CheckCircle } from 'lucide-react';
+import { BSGSLibrary, libraries } from '../lib/libraries.ts'; // Assuming libraries is an array of BSGSLibrary objects
 
 // Core interfaces and types
 interface BSGSComputationResult {
@@ -7,18 +8,17 @@ interface BSGSComputationResult {
 	result: string;
 }
 
+type BenchmarkResults = { string?: BenchmarkResult }
 
 interface BenchmarkResult {
 	library: string;
-	executionTime: number;
-	result: BSGSComputationResult;
-	inputBits: number;
-	timestamp: string;
+	executionTime: { [K in BitSize]?: number };
 }
 
 interface BenchmarkRunnerProps {
 	library: BSGSLibrary | null;
 	nBitNumber: string;
+	bitSize: BitSize;
 	onResult?: (result: BenchmarkResult) => void;
 }
 
@@ -28,10 +28,11 @@ type BitSize = 32 | 40 | 48;
 const BenchmarkRunner: React.FC<BenchmarkRunnerProps> = ({
 	library,
 	nBitNumber,
+	bitSize,
 	onResult
 }) => {
 	const [isRunning, setIsRunning] = useState<boolean>(false);
-	const [result, setResult] = useState<BenchmarkResult | null>(null);
+	const [result, setResult] = useState<BenchmarkResult | null>();
 	const [error, setError] = useState<string | null>(null);
 
 	const runBenchmark = useCallback(async (): Promise<void> => {
@@ -46,15 +47,18 @@ const BenchmarkRunner: React.FC<BenchmarkRunnerProps> = ({
 			const computationResult: BSGSComputationResult = await library.compute(nBitNumber);
 			const endTime: number = performance.now();
 
+			if (BigInt(computationResult.result) != BigInt(nBitNumber)) {
+				throw new Error('Simulated error for testing');
+			}
+
 			const benchmarkResult: BenchmarkResult = {
 				library: library.name,
-				executionTime: endTime - startTime,
-				result: computationResult,
-				inputBits: nBitNumber.length * 4, // Assuming hex string
-				timestamp: new Date().toISOString()
+				executionTime: {
+					[bitSize]: endTime - startTime
+				},
 			};
 
-			setResult(benchmarkResult);
+			setResult(result ? { ...result, ...benchmarkResult } : benchmarkResult);
 			if (onResult) {
 				onResult(benchmarkResult);
 			}
@@ -64,7 +68,7 @@ const BenchmarkRunner: React.FC<BenchmarkRunnerProps> = ({
 		} finally {
 			setIsRunning(false);
 		}
-	}, [library, nBitNumber, onResult]);
+	}, [bitSize, library, nBitNumber, onResult, result]);
 
 	const formatTime = (ms: number): string => {
 		if (ms < 1000) return `${ms.toFixed(2)}ms`;
@@ -145,7 +149,6 @@ const BenchmarkRunner: React.FC<BenchmarkRunnerProps> = ({
 						<div className="col-span-2">
 							<span className="text-gray-600">Result:</span>
 							<div className="font-mono text-sm bg-gray-100 p-2 rounded mt-1">
-								Steps: {result.result.steps}<br />
 								Value: {result.result.result}
 							</div>
 						</div>
@@ -172,7 +175,7 @@ const WASMBenchmarkInterface: React.FC = () => {
 		return result;
 	};
 
-	const [currentNumber, setCurrentNumber] = useState<string>(() => generateRandomNumber(64));
+	const [currentNumber, setCurrentNumber] = useState<string>(() => generateRandomNumber(selectedBits));
 
 	const handleBitChange = (bits: BitSize): void => {
 		setSelectedBits(bits);
@@ -197,12 +200,6 @@ const WASMBenchmarkInterface: React.FC = () => {
 	};
 
 	const bitOptions: readonly BitSize[] = [32, 40, 48] as const;
-
-	// Example libraries array - you can extend this with your actual WASM libraries
-	const libraries: BSGSLibrary[] = [
-		dummyLibrary,
-		// Add your actual WASM libraries here
-	];
 
 	return (
 		<div className="max-w-4xl mx-auto p-6 bg-gray-50 min-h-screen">
@@ -281,8 +278,6 @@ const WASMBenchmarkInterface: React.FC = () => {
 									<th className="text-left py-2">Library</th>
 									<th className="text-left py-2">Bits</th>
 									<th className="text-left py-2">Time</th>
-									<th className="text-left py-2">Steps</th>
-									<th className="text-left py-2">Timestamp</th>
 								</tr>
 							</thead>
 							<tbody>
@@ -295,10 +290,6 @@ const WASMBenchmarkInterface: React.FC = () => {
 												? `${result.executionTime.toFixed(2)}ms`
 												: `${(result.executionTime / 1000).toFixed(2)}s`
 											}
-										</td>
-										<td className="py-2 font-mono">{result.result.steps}</td>
-										<td className="py-2 text-gray-500">
-											{new Date(result.timestamp).toLocaleTimeString()}
 										</td>
 									</tr>
 								))}
@@ -315,7 +306,6 @@ export default WASMBenchmarkInterface;
 
 // Export types for use in other modules
 export type {
-	BSGSLibrary,
 	BSGSComputationResult,
 	BenchmarkResult,
 	BenchmarkRunnerProps,
