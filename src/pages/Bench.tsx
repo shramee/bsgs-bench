@@ -3,11 +3,6 @@ import { Clock, Play, AlertCircle, CheckCircle } from 'lucide-react';
 import { BSGSLibrary, libraries } from '../lib/libraries.ts'; // Assuming libraries is an array of BSGSLibrary objects
 
 // Core interfaces and types
-interface BSGSComputationResult {
-	steps: number;
-	result: string;
-}
-
 type BenchmarkResult = {
 	library: string;
 } & {
@@ -46,7 +41,7 @@ const BenchmarkRunner: React.FC<BenchmarkRunnerProps> = ({
 
 		try {
 			const startTime: number = performance.now();
-			const computationResult: BSGSComputationResult = await library.compute(nBitNumber);
+			const computationResult: string = await library.compute(nBitNumber);
 			const endTime: number = performance.now();
 
 			setOutput(computationResult.result);
@@ -306,7 +301,6 @@ export default WASMBenchmarkInterface;
 
 // Export types for use in other modules
 export type {
-	BSGSComputationResult,
 	BenchmarkResult,
 	BenchmarkRunnerProps,
 	BitSize
