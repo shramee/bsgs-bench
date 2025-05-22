@@ -12,13 +12,14 @@ const dummyLibrary: BSGSLibrary = {
 	async compute(nBitNumber: string): Promise<string> {
 		// Simulate computation time based on bit size
 		const baseTime = 100;
-		const complexityFactor = Math.pow(2, Math.log2(nBitNumber.length) / 2);
+		const complexityFactor = Math.floor(5 ** Math.floor(nBitNumber.length / 4));
 		const simulatedTime = baseTime + (complexityFactor * 10);
+		console.log(`Simulating computation for ${nBitNumber} with complexity factor ${complexityFactor}...`);
 
 		await new Promise<void>(resolve => setTimeout(resolve, simulatedTime));
 
 		// Return a dummy result
-		return `0x${Math.random().toString(16)}`;
+		return `0x${Math.random().toString(16).slice(2, 10)}`;
 	}
 };
 

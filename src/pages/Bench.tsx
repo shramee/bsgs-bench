@@ -41,10 +41,10 @@ const BenchmarkRunner: React.FC<BenchmarkRunnerProps> = ({
 
 		try {
 			const startTime: number = performance.now();
-			const computationResult: string = await library.compute(nBitNumber);
+			const output: string = await library.compute(nBitNumber);
 			const endTime: number = performance.now();
 
-			setOutput(computationResult.result);
+			setOutput(output);
 
 			const benchmarkResult: BenchmarkResult = {
 				library: library.name,
@@ -182,9 +182,9 @@ const WASMBenchmarkInterface: React.FC = () => {
 	const handleBenchmarkResult = (result: BenchmarkResult): void => {
 		setResults(prev => {
 			const lib = result.library;
-			prev[lib] = prev[lib] ? { ...prev[lib], ...result } : result;
+			prev[lib] = prev[lib] || {};
 
-			return prev
+			return { ...prev, [lib]: { ...prev[lib], ...result } };
 		}); // Keep last 10 results
 	};
 
