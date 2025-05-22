@@ -146,7 +146,7 @@ const BenchmarkRunner = ({ library, nBitNumber, onResult }) => {
 
 // Main benchmark interface
 const WASMBenchmarkInterface = () => {
-	const [selectedBits, setSelectedBits] = useState(64);
+	const [selectedBits, setSelectedBits] = useState(32);
 	const [customNumber, setCustomNumber] = useState('');
 	const [results, setResults] = useState([]);
 
@@ -178,7 +178,7 @@ const WASMBenchmarkInterface = () => {
 		setResults(prev => [result, ...prev].slice(0, 10)); // Keep last 10 results
 	};
 
-	const bitOptions = [8, 16, 32, 64, 128, 256];
+	const bitOptions = [32, 40, 48];
 
 	// Example libraries array - you can extend this with your actual WASM libraries
 	const libraries = [
