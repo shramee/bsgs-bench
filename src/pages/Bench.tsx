@@ -8,12 +8,13 @@ interface BSGSComputationResult {
 	result: string;
 }
 
-type BenchmarkResults = { string?: BenchmarkResult }
-
-interface BenchmarkResult {
+type BenchmarkResult = {
 	library: string;
-	executionTime: { [K in BitSize]?: number };
-}
+} & {
+	[K in BitSize]?: number;
+};
+
+type BenchmarkResults = { [key: string]: BenchmarkResult }
 
 interface BenchmarkRunnerProps {
 	library: BSGSLibrary | null;
@@ -33,6 +34,7 @@ const BenchmarkRunner: React.FC<BenchmarkRunnerProps> = ({
 }) => {
 	const [isRunning, setIsRunning] = useState<boolean>(false);
 	const [result, setResult] = useState<BenchmarkResult | null>();
+	const [output, setOutput] = useState<string | null>();
 	const [error, setError] = useState<string | null>(null);
 
 	const runBenchmark = useCallback(async (): Promise<void> => {
@@ -47,15 +49,11 @@ const BenchmarkRunner: React.FC<BenchmarkRunnerProps> = ({
 			const computationResult: BSGSComputationResult = await library.compute(nBitNumber);
 			const endTime: number = performance.now();
 
-			if (BigInt(computationResult.result) != BigInt(nBitNumber)) {
-				throw new Error('Simulated error for testing');
-			}
+			setOutput(computationResult.result);
 
 			const benchmarkResult: BenchmarkResult = {
 				library: library.name,
-				executionTime: {
-					[bitSize]: endTime - startTime
-				},
+				[bitSize]: endTime - startTime
 			};
 
 			setResult(result ? { ...result, ...benchmarkResult } : benchmarkResult);
@@ -132,24 +130,21 @@ const BenchmarkRunner: React.FC<BenchmarkRunnerProps> = ({
 						<span className="text-sm font-medium text-green-700">Benchmark Complete</span>
 					</div>
 
-					<div className="grid grid-cols-2 gap-4 text-sm">
-						<div>
-							<span className="text-gray-600">Execution Time:</span>
-							<div className="font-mono text-lg text-green-700">
-								<Clock size={16} className="inline mr-1" />
-								{formatTime(result.executionTime)}
+					<div className="grid grid-cols-3 gap-4 text-sm">
+						{Object.keys(result).filter(k => k != 'library').map((key) => {
+							return <div>
+								<span className="text-gray-600">{key} Bits Time:</span>
+								<div className="font-mono text-lg text-green-700">
+									<Clock size={16} className="inline mr-1" />
+									{formatTime(result[key as unknown as BitSize] as number)}
+								</div>
 							</div>
-						</div>
-
-						<div>
-							<span className="text-gray-600">Input Size:</span>
-							<div className="font-mono text-lg">{result.inputBits} bits</div>
-						</div>
+						})}
 
 						<div className="col-span-2">
-							<span className="text-gray-600">Result:</span>
+							<span className="text-gray-600">Output:</span>
 							<div className="font-mono text-sm bg-gray-100 p-2 rounded mt-1">
-								Value: {result.result.result}
+								{output}
 							</div>
 						</div>
 					</div>
@@ -163,7 +158,7 @@ const BenchmarkRunner: React.FC<BenchmarkRunnerProps> = ({
 const WASMBenchmarkInterface: React.FC = () => {
 	const [selectedBits, setSelectedBits] = useState<BitSize>(32);
 	const [customNumber, setCustomNumber] = useState<string>('');
-	const [results, setResults] = useState<BenchmarkResult[]>([]);
+	const [results, setResults] = useState<BenchmarkResults>({});
 
 	// Generate random n-bit number
 	const generateRandomNumber = (bits: number): string => {
@@ -190,7 +185,12 @@ const WASMBenchmarkInterface: React.FC = () => {
 	};
 
 	const handleBenchmarkResult = (result: BenchmarkResult): void => {
-		setResults(prev => [result, ...prev].slice(0, 10)); // Keep last 10 results
+		setResults(prev => {
+			const lib = result.library;
+			prev[lib] = prev[lib] ? { ...prev[lib], ...result } : result;
+
+			return prev
+		}); // Keep last 10 results
 	};
 
 	const handleRandomGenerate = (): void => {
@@ -261,6 +261,7 @@ const WASMBenchmarkInterface: React.FC = () => {
 					<BenchmarkRunner
 						key={`${library.name}-${index}`}
 						library={library}
+						bitSize={selectedBits}
 						nBitNumber={currentNumber}
 						onResult={handleBenchmarkResult}
 					/>
@@ -268,7 +269,7 @@ const WASMBenchmarkInterface: React.FC = () => {
 			</div>
 
 			{/* Results History */}
-			{results.length > 0 && (
+			{Object.keys(results).length > 0 && (
 				<div className="bg-white rounded-lg p-6 shadow-sm">
 					<h2 className="text-xl font-semibold mb-4">Recent Results</h2>
 					<div className="overflow-x-auto">
@@ -276,23 +277,22 @@ const WASMBenchmarkInterface: React.FC = () => {
 							<thead>
 								<tr className="border-b">
 									<th className="text-left py-2">Library</th>
-									<th className="text-left py-2">Bits</th>
-									<th className="text-left py-2">Time</th>
+									{bitOptions.map(bits => (
+										<th key={bits} className="text-left py-2">{bits} Bits</th>
+									))}
 								</tr>
 							</thead>
 							<tbody>
-								{results.map((result, index) => (
-									<tr key={index} className="border-b">
-										<td className="py-2">{result.library}</td>
-										<td className="py-2">{result.inputBits}</td>
-										<td className="py-2 font-mono">
-											{result.executionTime < 1000
-												? `${result.executionTime.toFixed(2)}ms`
-												: `${(result.executionTime / 1000).toFixed(2)}s`
-											}
-										</td>
+								{Object.keys(results).map((lib) => {
+									const result = { [32]: 0, [40]: 0, [48]: 0, ...results[lib] };
+									return <tr key={lib} className="border-b">
+										<td className="py-2">{lib}</td>
+										{bitOptions.map(bits => <td className="py-2">{result[bits] < 1000
+											? `${result[bits].toFixed(2)}ms`
+											: `${(result[bits] / 1000).toFixed(2)}s`}</td>
+										)}
 									</tr>
-								))}
+								})}
 							</tbody>
 						</table>
 					</div>
