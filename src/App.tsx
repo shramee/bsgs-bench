@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import Header from './layout/Header';
 import Footer from './layout/Footer';
-import Landing from './pages/Landing';
+import Bench from './pages/Bench';
 
 // Footer Component
 
@@ -21,7 +21,7 @@ const App = () => {
   const renderContent = () => {
     switch (currentPath) {
       default:
-        return <Landing />;
+        return <Bench />;
     }
   };
 
