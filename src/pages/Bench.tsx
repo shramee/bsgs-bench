@@ -1,17 +1,52 @@
 import React, { useState, useCallback } from 'react';
 import { Clock, Play, AlertCircle, CheckCircle } from 'lucide-react';
 
+// Core interfaces and types
+interface BSGSComputationResult {
+	steps: number;
+	result: string;
+}
+
+interface BSGSLibrary {
+	name: string;
+	supportedBits: number[];
+	compute(nBitNumber: string): Promise<BSGSComputationResult>;
+}
+
+interface BenchmarkResult {
+	library: string;
+	executionTime: number;
+	result: BSGSComputationResult;
+	inputBits: number;
+	timestamp: string;
+}
+
+interface BenchmarkRunnerProps {
+	library: BSGSLibrary | null;
+	nBitNumber: string;
+	onResult?: (result: BenchmarkResult) => void;
+}
+
+interface WASMBenchmarkState {
+	selectedBits: number;
+	customNumber: string;
+	currentNumber: string;
+	results: BenchmarkResult[];
+}
+
+type BitSize = 8 | 16 | 32 | 64 | 128 | 256;
+
 // Dummy library implementation for testing
-const dummyLibrary = {
+const dummyLibrary: BSGSLibrary = {
 	name: "Dummy BSGS",
 	supportedBits: [8, 16, 32, 64, 128],
-	async compute(nBitNumber) {
+	async compute(nBitNumber: string): Promise<BSGSComputationResult> {
 		// Simulate computation time based on bit size
 		const baseTime = 100;
 		const complexityFactor = Math.pow(2, Math.log2(nBitNumber.length) / 2);
 		const simulatedTime = baseTime + (complexityFactor * 10);
 
-		await new Promise(resolve => setTimeout(resolve, simulatedTime));
+		await new Promise<void>(resolve => setTimeout(resolve, simulatedTime));
 
 		// Return a dummy result
 		return {
@@ -22,12 +57,16 @@ const dummyLibrary = {
 };
 
 // Benchmark timing component
-const BenchmarkRunner = ({ library, nBitNumber, onResult }) => {
-	const [isRunning, setIsRunning] = useState(false);
-	const [result, setResult] = useState(null);
-	const [error, setError] = useState(null);
+const BenchmarkRunner: React.FC<BenchmarkRunnerProps> = ({
+	library,
+	nBitNumber,
+	onResult
+}) => {
+	const [isRunning, setIsRunning] = useState<boolean>(false);
+	const [result, setResult] = useState<BenchmarkResult | null>(null);
+	const [error, setError] = useState<string | null>(null);
 
-	const runBenchmark = useCallback(async () => {
+	const runBenchmark = useCallback(async (): Promise<void> => {
 		if (!library || !nBitNumber) return;
 
 		setIsRunning(true);
@@ -35,11 +74,11 @@ const BenchmarkRunner = ({ library, nBitNumber, onResult }) => {
 		setResult(null);
 
 		try {
-			const startTime = performance.now();
-			const computationResult = await library.compute(nBitNumber);
-			const endTime = performance.now();
+			const startTime: number = performance.now();
+			const computationResult: BSGSComputationResult = await library.compute(nBitNumber);
+			const endTime: number = performance.now();
 
-			const benchmarkResult = {
+			const benchmarkResult: BenchmarkResult = {
 				library: library.name,
 				executionTime: endTime - startTime,
 				result: computationResult,
@@ -52,24 +91,29 @@ const BenchmarkRunner = ({ library, nBitNumber, onResult }) => {
 				onResult(benchmarkResult);
 			}
 		} catch (err) {
-			setError(err.message);
+			const errorMessage = err instanceof Error ? err.message : 'Unknown error occurred';
+			setError(errorMessage);
 		} finally {
 			setIsRunning(false);
 		}
 	}, [library, nBitNumber, onResult]);
 
-	const formatTime = (ms) => {
+	const formatTime = (ms: number): string => {
 		if (ms < 1000) return `${ms.toFixed(2)}ms`;
 		return `${(ms / 1000).toFixed(2)}s`;
 	};
 
-	const isBitSizeSupported = library && library.supportedBits.includes(nBitNumber?.length * 4);
+	const isBitSizeSupported: boolean = Boolean(
+		library && library.supportedBits.includes(nBitNumber?.length * 4)
+	);
 
 	return (
 		<div className="border rounded-lg p-4 bg-white shadow-sm">
 			<div className="flex items-center justify-between mb-4">
 				<div>
-					<h3 className="text-lg font-semibold text-gray-800">{library?.name || 'No Library'}</h3>
+					<h3 className="text-lg font-semibold text-gray-800">
+						{library?.name || 'No Library'}
+					</h3>
 					<p className="text-sm text-gray-600">
 						Supported bits: {library?.supportedBits.join(', ') || 'None'}
 					</p>
@@ -145,13 +189,13 @@ const BenchmarkRunner = ({ library, nBitNumber, onResult }) => {
 };
 
 // Main benchmark interface
-const WASMBenchmarkInterface = () => {
-	const [selectedBits, setSelectedBits] = useState(32);
-	const [customNumber, setCustomNumber] = useState('');
-	const [results, setResults] = useState([]);
+const WASMBenchmarkInterface: React.FC = () => {
+	const [selectedBits, setSelectedBits] = useState<BitSize>(64);
+	const [customNumber, setCustomNumber] = useState<string>('');
+	const [results, setResults] = useState<BenchmarkResult[]>([]);
 
 	// Generate random n-bit number
-	const generateRandomNumber = (bits) => {
+	const generateRandomNumber = (bits: number): string => {
 		const hexChars = bits / 4;
 		let result = '';
 		for (let i = 0; i < hexChars; i++) {
@@ -160,35 +204,43 @@ const WASMBenchmarkInterface = () => {
 		return result;
 	};
 
-	const [currentNumber, setCurrentNumber] = useState(() => generateRandomNumber(64));
+	const [currentNumber, setCurrentNumber] = useState<string>(() => generateRandomNumber(64));
 
-	const handleBitChange = (bits) => {
+	const handleBitChange = (bits: BitSize): void => {
 		setSelectedBits(bits);
 		if (!customNumber) {
 			setCurrentNumber(generateRandomNumber(bits));
 		}
 	};
 
-	const handleCustomNumberChange = (value) => {
+	const handleCustomNumberChange = (value: string): void => {
 		setCustomNumber(value);
 		setCurrentNumber(value);
 	};
 
-	const handleBenchmarkResult = (result) => {
+	const handleBenchmarkResult = (result: BenchmarkResult): void => {
 		setResults(prev => [result, ...prev].slice(0, 10)); // Keep last 10 results
 	};
 
-	const bitOptions = [32, 40, 48];
+	const handleRandomGenerate = (): void => {
+		const newNumber = generateRandomNumber(selectedBits);
+		setCurrentNumber(newNumber);
+		setCustomNumber('');
+	};
+
+	const bitOptions: readonly BitSize[] = [8, 16, 32, 64, 128, 256] as const;
 
 	// Example libraries array - you can extend this with your actual WASM libraries
-	const libraries = [
+	const libraries: BSGSLibrary[] = [
 		dummyLibrary,
 		// Add your actual WASM libraries here
 	];
 
 	return (
 		<div className="max-w-4xl mx-auto p-6 bg-gray-50 min-h-screen">
-			<h1 className="text-3xl font-bold text-gray-800 mb-8">WASM Baby Step Giant Step Benchmark</h1>
+			<h1 className="text-3xl font-bold text-gray-800 mb-8">
+				WASM Baby Step Giant Step Benchmark
+			</h1>
 
 			{/* Input Configuration */}
 			<div className="bg-white rounded-lg p-6 mb-6 shadow-sm">
@@ -196,10 +248,12 @@ const WASMBenchmarkInterface = () => {
 
 				<div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
 					<div>
-						<label className="block text-sm font-medium text-gray-700 mb-2">Bit Size</label>
+						<label className="block text-sm font-medium text-gray-700 mb-2">
+							Bit Size
+						</label>
 						<select
 							value={selectedBits}
-							onChange={(e) => handleBitChange(parseInt(e.target.value))}
+							onChange={(e) => handleBitChange(parseInt(e.target.value) as BitSize)}
 							className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
 						>
 							{bitOptions.map(bits => (
@@ -209,7 +263,9 @@ const WASMBenchmarkInterface = () => {
 					</div>
 
 					<div>
-						<label className="block text-sm font-medium text-gray-700 mb-2">Current Number</label>
+						<label className="block text-sm font-medium text-gray-700 mb-2">
+							Current Number
+						</label>
 						<div className="flex gap-2">
 							<input
 								type="text"
@@ -219,12 +275,9 @@ const WASMBenchmarkInterface = () => {
 								className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono text-sm"
 							/>
 							<button
-								onClick={() => {
-									const newNumber = generateRandomNumber(selectedBits);
-									setCurrentNumber(newNumber);
-									setCustomNumber('');
-								}}
+								onClick={handleRandomGenerate}
 								className="px-3 py-2 bg-gray-600 text-white rounded-md hover:bg-gray-700 text-sm"
+								type="button"
 							>
 								Random
 							</button>
@@ -291,3 +344,12 @@ const WASMBenchmarkInterface = () => {
 };
 
 export default WASMBenchmarkInterface;
+
+// Export types for use in other modules
+export type {
+	BSGSLibrary,
+	BSGSComputationResult,
+	BenchmarkResult,
+	BenchmarkRunnerProps,
+	BitSize
+};
