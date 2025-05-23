@@ -42,7 +42,7 @@ const BenchmarkRunner: React.FC<BenchmarkRunnerProps> = ({
 
 		try {
 			const startTime: number = performance.now();
-			const output: string = await library.compute(nBitNumber, bitSize);
+			const output: string = await library.compute(BigInt(nBitNumber), bitSize);
 			const endTime: number = performance.now();
 
 			setOutput(output);
@@ -160,7 +160,8 @@ const WASMBenchmarkInterface: React.FC = () => {
 	const generateRandomNumber = (bits: number): string => {
 		const hexChars = bits / 4;
 		let result = '';
-		for (let i = 0; i < hexChars; i++) {
+		result += Math.floor(8 + Math.random() * 8).toString(16);
+		for (let i = 1; i < hexChars; i++) {
 			result += Math.floor(Math.random() * 16).toString(16);
 		}
 		return '0x' + result;
@@ -244,7 +245,7 @@ const WASMBenchmarkInterface: React.FC = () => {
 							</button>
 						</div>
 						<p className="text-xs text-gray-500 mt-1">
-							Current: {currentNumber.length * 4} bits ({currentNumber})
+							Current: {selectedBits} bits ({currentNumber})
 						</p>
 					</div>
 				</div>
