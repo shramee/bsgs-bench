@@ -7,44 +7,50 @@ import { BSGSLibrary } from "./libraries";
 // Run
 const speedHashMap = {
 	"bjj8": {
-		32: 2517,
-		40: 11193
+		32: 1330,
+		40: 6410
 	},
 	"bjj4": {
-		32: 4631,
-		40: 11155
+		32: 2523,
+		40: 6143,
 	},
 	"bjj1": {
-		32: 15505,
-		40: 22063
+		32: 8322,
+		40: 11923
 	}
 }
-// 32 bits 8 threads: 2517ms
-// 40 bits 8 threads: 11193ms
-// 32 bits 4 threads: 4631ms
-// 40 bits 4 threads: 11155ms
-// 32 bits 1 thread: 15505ms
-// 40 bits 1 thread: 22063ms
+
+// ### 1 thread
+// - 32 bits: 8322ms
+// - 40 bits: 11923ms
+
+// ### 4 threads
+// - 32 bits: 2523ms
+// - 40 bits: 6143ms
+
+// ### 8 threads
+// - 32 bits: 1330ms
+// - 40 bits: 6410ms
 
 export const Jat9292BbjBsGsResults = {
-	"Jat9292/bjj/8": {
-		"32": 2518.10000000149,
-		"40": 11194,
+	"Jat9292/bjj/1": {
+		"32": speedHashMap.bjj1[32],
+		"40": speedHashMap.bjj1[40],
 		"library": "Jat9292/babyjubjub",
-		"threads": 8,
+		"threads": 1,
 	},
 	"Jat9292/bjj/4": {
-		"32": 4632.099999997765,
-		"40": 11155.800000000745,
+		"32": speedHashMap.bjj4[32],
+		"40": speedHashMap.bjj4[40],
 		"library": "Jat9292/babyjubjub",
 		"threads": 4,
 	},
-	"Jat9292/bjj/1": {
-		"32": 15506.800000000745,
-		"40": 22065.300000000745,
+	"Jat9292/bjj/8": {
+		"32": speedHashMap.bjj8[32],
+		"40": speedHashMap.bjj8[40],
 		"library": "Jat9292/babyjubjub",
-		"threads": 1,
-	}
+		"threads": 8,
+	},
 }
 
 const BabyJubUtils8Threads: BSGSLibrary = {
