@@ -42,10 +42,10 @@ const BenchmarkRunner: React.FC<BenchmarkRunnerProps> = ({
 
 		try {
 			const startTime: number = performance.now();
-			const output: string = await library.compute(BigInt(nBitNumber), bitSize);
+			const output: bigint = await library.compute(BigInt(nBitNumber), bitSize);
 			const endTime: number = performance.now();
 
-			setOutput(output);
+			setOutput(output.toString(16));
 
 			const benchmarkResult: BenchmarkResult = {
 				library: library.name,
@@ -122,8 +122,13 @@ const BenchmarkRunner: React.FC<BenchmarkRunnerProps> = ({
 			{result && (
 				<div className="bg-green-50 border border-green-200 rounded-md p-4">
 					<div className="flex items-center gap-2 mb-3">
-						<CheckCircle size={16} className="text-green-600" />
-						<span className="text-sm font-medium text-green-700">Benchmark Complete</span>
+						{isRunning ? <>
+							<Clock size={16} className="text-yellow-600" />
+							<span className="text-sm font-medium text-yellow-700">Running Benchmark</span>
+						</> : <>
+							<CheckCircle size={16} className="text-green-600" />
+							<span className="text-sm font-medium text-green-700">Benchmark Complete</span>
+						</>}
 					</div>
 
 					<div className="grid grid-cols-3 gap-4 text-sm">
@@ -286,9 +291,12 @@ const WASMBenchmarkInterface: React.FC = () => {
 									return <tr key={lib} className="border-b">
 										<td className="py-2">{result.library}</td>
 										<td className="py-2 pl-6">{result.threads || 1}</td>
-										{bitOptions.map(bits => <td className="py-2">{result[bits] < 1000
-											? `${result[bits].toFixed(2)}ms`
-											: `${(result[bits] / 1000).toFixed(2)}s`}</td>
+										{bitOptions.map(bits => <td className="py-2">
+											{result[bits] == 0
+												? <p className='opacity-50'>No support</p>
+												: result[bits] < 1000 ?
+													`${result[bits].toFixed(2)}ms`
+													: `${(result[bits] / 1000).toFixed(2)}s`}</td>
 										)}
 									</tr>
 								})}
