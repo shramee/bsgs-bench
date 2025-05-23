@@ -1,10 +1,12 @@
 import React, { useState, useCallback } from 'react';
 import { Clock, Play, AlertCircle, CheckCircle } from 'lucide-react';
 import { BSGSLibrary, libraries } from '../lib/libraries.ts'; // Assuming libraries is an array of BSGSLibrary objects
+import { Jat9292BbjBsGsResults } from '@/lib/BabyJub_Utils.ts';
 
 // Core interfaces and types
 type BenchmarkResult = {
 	library: string;
+	threads?: number;
 } & {
 	[K in BitSize]?: number;
 };
@@ -41,7 +43,7 @@ const BenchmarkRunner: React.FC<BenchmarkRunnerProps> = ({
 
 		try {
 			const startTime: number = performance.now();
-			const output: string = await library.compute(nBitNumber);
+			const output: string = await library.compute(nBitNumber, bitSize);
 			const endTime: number = performance.now();
 
 			setOutput(output);
@@ -153,7 +155,7 @@ const BenchmarkRunner: React.FC<BenchmarkRunnerProps> = ({
 const WASMBenchmarkInterface: React.FC = () => {
 	const [selectedBits, setSelectedBits] = useState<BitSize>(32);
 	const [customNumber, setCustomNumber] = useState<string>('');
-	const [results, setResults] = useState<BenchmarkResults>({});
+	const [results, setResults] = useState<BenchmarkResults>(Jat9292BbjBsGsResults);
 
 	// Generate random n-bit number
 	const generateRandomNumber = (bits: number): string => {
@@ -272,6 +274,7 @@ const WASMBenchmarkInterface: React.FC = () => {
 							<thead>
 								<tr className="border-b">
 									<th className="text-left py-2">Library</th>
+									<th className="text-left py-2">Threads</th>
 									{bitOptions.map(bits => (
 										<th key={bits} className="text-left py-2">{bits} Bits</th>
 									))}
@@ -281,7 +284,8 @@ const WASMBenchmarkInterface: React.FC = () => {
 								{Object.keys(results).map((lib) => {
 									const result = { [32]: 0, [40]: 0, [48]: 0, ...results[lib] };
 									return <tr key={lib} className="border-b">
-										<td className="py-2">{lib}</td>
+										<td className="py-2">{result.library}</td>
+										<td className="py-2 pl-6">{result.threads || 1}</td>
 										{bitOptions.map(bits => <td className="py-2">{result[bits] < 1000
 											? `${result[bits].toFixed(2)}ms`
 											: `${(result[bits] / 1000).toFixed(2)}s`}</td>
