@@ -1,7 +1,6 @@
 import React, { useState, useCallback } from 'react';
 import { Clock, Play, AlertCircle, CheckCircle } from 'lucide-react';
-import { BSGSLibrary, libraries } from '../lib/libraries.ts'; // Assuming libraries is an array of BSGSLibrary objects
-import { Jat9292BbjBsGsResults } from '@/lib/BabyJub_Utils.ts';
+import { BSGSLibrary, libraries, libResults } from '../lib/libraries.ts'; // Assuming libraries is an array of BSGSLibrary objects
 
 // Core interfaces and types
 type BenchmarkResult = {
@@ -71,7 +70,7 @@ const BenchmarkRunner: React.FC<BenchmarkRunnerProps> = ({
 	};
 
 	const isBitSizeSupported: boolean = Boolean(
-		library && library.supportedBits.includes(nBitNumber?.length * 4)
+		library && library.supportedBits.includes(bitSize)
 	);
 
 	return (
@@ -108,7 +107,7 @@ const BenchmarkRunner: React.FC<BenchmarkRunnerProps> = ({
 				<div className="flex items-center gap-2 p-3 bg-yellow-50 border border-yellow-200 rounded-md mb-4">
 					<AlertCircle size={16} className="text-yellow-600" />
 					<span className="text-sm text-yellow-700">
-						This library doesn't support {nBitNumber.length * 4}-bit numbers
+						This library doesn't support {bitSize}-bit numbers
 					</span>
 				</div>
 			)}
@@ -155,7 +154,7 @@ const BenchmarkRunner: React.FC<BenchmarkRunnerProps> = ({
 const WASMBenchmarkInterface: React.FC = () => {
 	const [selectedBits, setSelectedBits] = useState<BitSize>(32);
 	const [customNumber, setCustomNumber] = useState<string>('');
-	const [results, setResults] = useState<BenchmarkResults>(Jat9292BbjBsGsResults);
+	const [results, setResults] = useState<BenchmarkResults>(libResults);
 
 	// Generate random n-bit number
 	const generateRandomNumber = (bits: number): string => {
@@ -164,7 +163,7 @@ const WASMBenchmarkInterface: React.FC = () => {
 		for (let i = 0; i < hexChars; i++) {
 			result += Math.floor(Math.random() * 16).toString(16);
 		}
-		return result;
+		return '0x' + result;
 	};
 
 	const [currentNumber, setCurrentNumber] = useState<string>(() => generateRandomNumber(selectedBits));
@@ -245,7 +244,7 @@ const WASMBenchmarkInterface: React.FC = () => {
 							</button>
 						</div>
 						<p className="text-xs text-gray-500 mt-1">
-							Current: {currentNumber.length * 4} bits (0x{currentNumber})
+							Current: {currentNumber.length * 4} bits ({currentNumber})
 						</p>
 					</div>
 				</div>
