@@ -34,7 +34,10 @@ const BenchmarkRunner: React.FC<BenchmarkRunnerProps> = ({
 	const [error, setError] = useState<string | null>(null);
 
 	const runBenchmark = useCallback(async (): Promise<void> => {
-		if (!library || !nBitNumber) return;
+		if (!library || !nBitNumber) {
+			setError("Library/number not provided");
+			return;
+		}
 
 		setIsRunning(true);
 		setError(null);
@@ -133,7 +136,7 @@ const BenchmarkRunner: React.FC<BenchmarkRunnerProps> = ({
 
 					<div className="grid grid-cols-3 gap-4 text-sm">
 						{Object.keys(result).filter(k => k != 'library').map((key) => {
-							return <div>
+							return <div key={key}>
 								<span className="text-gray-600">{key} Bits Time:</span>
 								<div className="font-mono text-lg text-green-700">
 									<Clock size={16} className="inline mr-1" />
@@ -291,7 +294,7 @@ const WASMBenchmarkInterface: React.FC = () => {
 									return <tr key={lib} className="border-b">
 										<td className="py-2">{result.library}</td>
 										<td className="py-2 pl-6">{result.threads || 1}</td>
-										{bitOptions.map(bits => <td className="py-2">
+										{bitOptions.map(bits => <td key={bits} className="py-2">
 											{result[bits] == 0
 												? <p className='opacity-50'>No support</p>
 												: result[bits] < 1000 ?
